@@ -8,14 +8,8 @@ Graph Theory - Computer Science - Unifor
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### Run
 
 ```sh
 npm run dev
-```
-
-### Type-Check, Compile and Minify for Production
-
-```sh
-npm run build
 ```
