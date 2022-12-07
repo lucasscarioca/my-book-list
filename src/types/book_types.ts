@@ -1,4 +1,4 @@
-import type { ImgHTMLAttributes } from 'vue'
+import type { AnchorHTMLAttributes, ImgHTMLAttributes } from 'vue'
 
 export interface BookData {
     title: String,
@@ -6,7 +6,7 @@ export interface BookData {
     categories: [String],
     description: String, 
     image: ImgHTMLAttributes["src"],
-    infoLink: String,
+    infoLink: AnchorHTMLAttributes["href"],
     pageCount: Number
   }
 
@@ -18,6 +18,6 @@ export interface BookInfo {
     imageLinks: {
       thumbnail: ImgHTMLAttributes["src"] 
     },
-    infoLink: String,
+    infoLink: AnchorHTMLAttributes["href"],
     pageCount: Number
   }

@@ -12,5 +12,5 @@
 ## Algoritmo
 
 - Vertice: Livros;
-- Arestas: Relação entre os livros (palavras-chaves no título, avaliação, autor, categoria, nº de pag);
+- Arestas: Relação entre os livros (palavras-chaves no título, avaliação, autor, nº de pag);
 - Algoritmo: Bfs. Recomandação dos livros conectados aos selecionados baseado no peso das arestas, dando prioridade para pesos maiores.
