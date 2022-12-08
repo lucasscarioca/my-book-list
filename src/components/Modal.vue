@@ -1,8 +1,10 @@
 <script lang="ts">
+import Button from '../components/Button.vue'
 export default {
   props: {
     show: Boolean
-  }
+  },
+  components: { Button }
 }
 </script>
 
@@ -10,22 +12,18 @@ export default {
   <Transition name="modal">
     <div v-if="show" class="modal-mask">
       <div class="modal-wrapper">
-        <div class="modal-container">
+        <div class="modal-container bg-gray-100">
           <div class="modal-header">
-            <slot name="header">default header</slot>
+            <slot name="header"></slot>
           </div>
 
           <div class="modal-body">
-            <slot name="body">default body</slot>
+            <slot name="body"></slot>
           </div>
 
-          <div class="modal-footer">
+          <div class="modal-footer min-h-[30px]">
             <slot name="footer">
-              default footer
-              <button
-                class="modal-default-button"
-                @click="$emit('close')"
-              >OK</button>
+              <Button @click="$emit('close')" label="OK"></Button>
             </slot>
           </div>
         </div>
@@ -53,11 +51,10 @@ export default {
 }
 
 .modal-container {
-  width: 600px;
+  max-width: 800px;
   margin: 0px auto;
   padding: 20px 30px;
-  background-color: #fff;
-  border-radius: 2px;
+  border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
   transition: all 0.3s ease;
 }
@@ -68,7 +65,7 @@ export default {
 }
 
 .modal-body {
-  margin: 20px 0;
+  margin: 20px 0 0 0;
 }
 
 .modal-default-button {
