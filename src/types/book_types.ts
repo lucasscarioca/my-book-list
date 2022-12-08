@@ -7,7 +7,8 @@ export interface BookData {
     description: String, 
     image: ImgHTMLAttributes["src"],
     infoLink: AnchorHTMLAttributes["href"],
-    pageCount: number
+    pageCount: number,
+    rating: number
   }
 
 export interface BookInfo {

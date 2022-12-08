@@ -1,20 +1,27 @@
 <template>
   <div class="flex flex-col gap-20 text-white mt-4">
-    <div class="flex flex-col gap-12">
-      <div class="flex flex-col gap-4 min-h-[280px] items-center">
-        <h2 class="text-xl font-bold">Books you might like</h2>
-        <div class="flex overflow-x-scroll pb-5 hide-scroll-bar-recommended">
+    <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-4 items-center">
+        <div class="flex flex-row gap-2">
+          <h2 class="text-xl font-bold">Recommended books</h2>
+          <button type="button" @click="handleOpenRecommendedGraphModal" class="px-6 py-2.5 bg-teal-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-teal-700 hover:shadow-lg focus:bg-teal-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-teal-800 active:shadow-lg transition duration-150 ease-in-out">
+            <img src="/network.png" alt="graph icon" height="20" width="20" class="invert">
+          </button>
+        </div>
+        <div class="flex overflow-x-scroll pb-5 hide-scroll-bar-recommended max-w-[90%] min-h-[280px]">
           <ul class="flex flex-nowrap gap-4">
             <li v-for="(book, index) in recommendedBooks" :key="index" class="w-40 h-60 transition ease-in-out delay-75 hover:-translate-y-1 hover:scale-110 duration-300">
-              <BookCard :book="book" />
+              <BookCard @click="selectRecommendedBook(index)" :book="book" />
             </li>
           </ul>
         </div>
       </div>
       <div class="flex flex-col items-center gap-4 min-h-[280px]">
         <div class="flex flex-row gap-2">
-          <h2 class="text-xl font-bold">Selected books</h2>
-          <Button @click="showGraphModal = true" label="View Graph"></Button>
+          <h2 class="text-xl font-bold">Favourites</h2>
+          <button type="button" @click="handleOpenSelectedGraphModal" class="px-6 py-2.5 bg-teal-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-teal-700 hover:shadow-lg focus:bg-teal-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-teal-800 active:shadow-lg transition duration-150 ease-in-out">
+            <img src="/network.png" alt="graph icon" height="20" width="20" class="invert">
+          </button>
         </div>
         <div class="flex overflow-x-scroll pb-5 hide-scroll-bar-selected">
           <ul class="flex flex-nowrap gap-4">
@@ -63,9 +70,10 @@
       </template>
       <template #body>
         <a :href="currentBook.infoLink" target="_blank" class="font-semibold text-indigo-500 hover:text-indigo-800 underline hover:decoration-indigo-500">more info</a>
-        <p><b>Authors:</b> {{currentBook.authors.join(', ')}}</p>
+        <p><b>Authors:</b> {{currentBook.authors ? currentBook.authors.join(', ') : 'n/a'}}</p>
         <p><b>Pages:</b> {{currentBook.pageCount}}</p>
-        <p><b>Description:</b> {{currentBook.description}}</p>
+        <p class="line-clamp-6"><b>Description:</b> {{currentBook.description}}</p>
+        <!-- <AwesomeVueStarRating :star="currentBook.rating" :disabled="false" :maxstars="5" :starsize="'lg'" :hasresults="false" :hasdescription="false" /> -->
       </template>
       <template #footer>
         <Button @click="handleSelectBook()" label="Add"></Button>
@@ -81,12 +89,33 @@
         </v-network-graph>
       </template>
     </modal>
+
+    <modal :show="showSelectedGraphModal" @close="showSelectedGraphModal = false">
+      <template #body>
+        <v-network-graph :nodes="selectedNodes" :edges="selectedEdges" class="h-[400px] w-[700px] mb-1 border border-solid border-black">
+          <template #edge-label="{ edge, ...slotProps }">
+            <v-edge-label :text="edge.label" align="center" vertical-align="above" v-bind="slotProps" />
+          </template>
+        </v-network-graph>
+      </template>
+    </modal>
+
+    <modal :show="showRecommendedGraphModal" @close="showRecommendedGraphModal = false">
+      <template #body>
+        <v-network-graph :nodes="nodes" :edges="edges" class="h-[400px] w-[700px] mb-1 border border-solid border-black">
+          <template #edge-label="{ edge, ...slotProps }">
+            <v-edge-label :text="edge.label" align="center" vertical-align="above" v-bind="slotProps" />
+          </template>
+        </v-network-graph>
+      </template>
+    </modal>
   </Teleport>
 </template>
 
 <script lang="ts">
 
   import type {AxiosInstance} from 'axios'
+  // import AwesomeVueStarRating from 'awesome-vue-star-rating'
   import BookCard from '../components/BookCard.vue'
   import Button from '../components/Button.vue'
   import Modal from '../components/Modal.vue'
@@ -111,9 +140,13 @@
         scrollAmount: 0,
         showModal: false,
         showGraphModal: false,
+        showSelectedGraphModal: false,
+        showRecommendedGraphModal: false,
         currentBook: {} as BookData,
         nodes: {} as any,
         edges: {} as any,
+        selectedNodes: {} as any,
+        selectedEdges: {} as any,
       }
     },
     methods: {
@@ -140,10 +173,10 @@
                   description: book.description,
                   image: book?.imageLinks?.thumbnail ?? "",
                   infoLink: book.infoLink,
-                  pageCount: book.pageCount
+                  pageCount: book.pageCount,
+                  rating: 3
                 });
               });
-
               this.initGraph(this.books)
             }
             catch (e) {
@@ -151,11 +184,17 @@
             }
             this.message = "";
         },
+        selectRecommendedBook(index: number) {
+          this.selectedBooks.push(this.recommendedBooks[index])
+          this.recommendedBooks.splice(index, 1)
+          this.findRecommendedBooks()
+        },
         handleSelectBook() {
           if(this.selectedBooks.includes(this.currentBook)) return
 
           this.selectedBooks.push(this.currentBook)
           this.showModal = false
+          this.findRecommendedBooks()
         },
         handleOpenBook(index: number) {
           this.currentBook = this.books[index]
@@ -166,6 +205,7 @@
         },
         handleClearSelectedBook(index: number) {
           this.selectedBooks.splice(index, 1)
+          this.findRecommendedBooks()
         }, 
         handleHorizontalScroll(side: string) {
           let content = document.querySelector(".hide-scroll-bar-search")
@@ -198,7 +238,19 @@
             this.showGraphModal = true
           }
         },
-        initGraph(books: Array<BookData>) {
+        handleOpenSelectedGraphModal() {
+          if (this.selectedBooks.length > 0) {
+            this.initSelectedGraph(this.selectedBooks, true)
+            this.showSelectedGraphModal = true
+          }
+        },
+        handleOpenRecommendedGraphModal() {
+          if (this.recommendedBooks.length > 0) {
+            this.initGraph(this.books)
+            this.showRecommendedGraphModal = true
+          }
+        },
+        initGraph(books: Array<BookData>, evalCategory: Boolean = false) {
           this.nodes = {}
           this.edges = {}
           for(let i = 0; i < books.length; i++) {
@@ -207,31 +259,60 @@
           for(let k = 0; k < books.length; k++) {
             for(let j = 0; j < books.length; j++) {
               if (k !== j && !this.edges[`${j}${k}`]) {
-                let edgeWeight = this.getEdgeWeight(this.books[k], this.books[j])
+                let edgeWeight = this.getEdgeWeight(books[k], books[j], evalCategory)
                 if (edgeWeight > 0) {
                   this.edges[`${k}${j}`] = { source: k, target: j, label: edgeWeight }
                 }
               }
             }
           }
-          console.log("edges", this.edges)
+          console.log(this.nodes)
+          console.log(this.edges)
+        },
+        initSelectedGraph(books: Array<BookData>, evalCategory: Boolean = false) {
+          this.selectedNodes = {}
+          this.selectedEdges = {}
+          for(let i = 0; i < books.length; i++) {
+            this.selectedNodes[i] = { name: books[i].title }
+          }
+          for(let k = 0; k < books.length; k++) {
+            for(let j = 0; j < books.length; j++) {
+              if (k !== j && !this.selectedEdges[`${j}${k}`]) {
+                let edgeWeight = this.getEdgeWeight(books[k], books[j], evalCategory)
+                if (edgeWeight > 0) {
+                  this.selectedEdges[`${k}${j}`] = { source: k, target: j, label: edgeWeight }
+                }
+              }
+            }
+          }
+          console.log(this.selectedNodes)
+          console.log(this.selectedEdges)
         },
         getEdgeWeight(book1: BookData, book2: BookData, evalCategory: Boolean = false) {
           let edgeWeight = 0
           let book1TitleKeywords = book1.title.split(' ').filter(word => word.length > 3)
           
-          book1.authors.forEach(author => {
-            if (book2.authors.includes(author)) {
-              edgeWeight += 4
-            }
-          })
-
-          if (evalCategory) {
-            book1.categories.forEach(category => {
-              if (book2.categories.includes(category)) {
-                edgeWeight += 1
+          if (book1.authors && book2.authors) {
+            book1.authors.forEach(author => {
+              if (book2.authors.includes(author)) {
+                edgeWeight += 4
               }
             })
+          }
+
+          if (evalCategory) {
+            console.log('entrou')
+            book1.categories.forEach(category => {
+              if (book2.categories.includes(category)) {
+                edgeWeight += 2
+              }
+            })
+          }
+
+          if (book1.rating >= 4 && book2.rating >= 4) {
+            edgeWeight += 2
+          } else if (book1.rating <= 2 && book2.rating <= 2) {
+            edgeWeight -= 2
           }
           
           book1TitleKeywords.forEach(keyword => {
@@ -245,7 +326,50 @@
           }
 
           return edgeWeight
-        }
+        },
+        findRecommendedBooks() {
+          this.recommendedBooks = []
+          let adjList = [] as Array<{neighbor: number, weight: number }>
+          this.selectedBooks.forEach(book => {
+            if (this.books.includes(book)) {
+              let bookNode = ''
+              let bookAdjList = [] as Array<{neighbor: number, weight: number }>
+              Object.keys(this.nodes).forEach(node => {
+                if (this.nodes[node].name === book.title) {
+                  bookNode = node
+                }
+              })
+
+              if (bookNode) {
+                Object.keys(this.edges).forEach(edge => {
+                  if (this.edges[edge].source == bookNode) {
+                    bookAdjList.push({ neighbor: this.edges[edge].target, weight: this.edges[edge].label })
+                  }else if (this.edges[edge].target == bookNode) {
+                    bookAdjList.push({ neighbor: this.edges[edge].source, weight: this.edges[edge].label })
+                  }
+                })
+  
+                if (bookAdjList) {
+                  adjList = adjList.concat(bookAdjList)
+                  console.log(bookNode!, bookAdjList!) // Cada livro selecionado, seus vizinhos e peso das arestas
+                }
+              }
+            }
+          })
+          
+          if (!adjList) return
+
+          adjList.sort((a, b) => b.weight - a.weight)
+          let recommendedList = adjList.splice(0,5)
+
+          recommendedList.forEach(element => {
+            let book = this.books.find(book => book.title === this.nodes[element.neighbor].name)
+            if (book && !this.selectedBooks.includes(book) && !this.recommendedBooks.includes(book)) {
+              this.recommendedBooks.push(book)
+            }
+          })
+
+        },
       },
       components: { BookCard, NavBar, Modal, Button }
   }
