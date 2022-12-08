@@ -18,7 +18,7 @@
       </div>
       <div class="flex flex-col items-center gap-4 min-h-[280px]">
         <div class="flex flex-row gap-2">
-          <h2 class="text-xl font-bold">Favourites</h2>
+          <h2 class="text-xl font-bold">Favorites</h2>
           <button type="button" @click="handleOpenSelectedGraphModal" class="px-6 py-2.5 bg-teal-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-teal-700 hover:shadow-lg focus:bg-teal-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-teal-800 active:shadow-lg transition duration-150 ease-in-out">
             <img src="/network.png" alt="graph icon" height="20" width="20" class="invert">
           </button>
@@ -131,7 +131,7 @@
 
   export default {
     data() {
-      return {
+      return { // Definição das variáveis mutáveis
         books: new Array<BookData>(),
         message: "",
         selectedBooks: new Array<BookData>(),
@@ -150,6 +150,7 @@
       }
     },
     methods: {
+        // Chamada na API Google Books, buscando 15(maxResults) livros da categoria informada
         async handleSubmitBook() {
           if(!this.message) return
             try {
@@ -177,18 +178,20 @@
                   rating: 3
                 });
               });
-              this.initGraph(this.books)
+              this.initGraph(this.books) // Inicia os vertices e arestas com os livros recebidos
             }
             catch (e) {
               console.log(e);
             }
             this.message = "";
         },
+        // Método chamado ao clicar em um livro da lista dos recomendados. Adiciona aos favoritos, retira e atualiza os recomendados
         selectRecommendedBook(index: number) {
           this.selectedBooks.push(this.recommendedBooks[index])
           this.recommendedBooks.splice(index, 1)
           this.findRecommendedBooks()
         },
+        // Favorita um livro e atualiza os recomendados
         handleSelectBook() {
           if(this.selectedBooks.includes(this.currentBook)) return
 
@@ -207,6 +210,7 @@
           this.selectedBooks.splice(index, 1)
           this.findRecommendedBooks()
         }, 
+        // Lida com os botões de scroll lateral da lista de busca de livros
         handleHorizontalScroll(side: string) {
           let content = document.querySelector(".hide-scroll-bar-search")
           if (!content) return
@@ -250,12 +254,15 @@
             this.showRecommendedGraphModal = true
           }
         },
+        // Carrega os vertices e arestas do grafo
         initGraph(books: Array<BookData>, evalCategory: Boolean = false) {
           this.nodes = {}
           this.edges = {}
+          // Gera um vertice para cada livro
           for(let i = 0; i < books.length; i++) {
             this.nodes[i] = { name: books[i].title }
           }
+          // Se a aresta ainda não existir, calcula o peso e cria a aresta
           for(let k = 0; k < books.length; k++) {
             for(let j = 0; j < books.length; j++) {
               if (k !== j && !this.edges[`${j}${k}`]) {
@@ -269,6 +276,7 @@
           console.log(this.nodes)
           console.log(this.edges)
         },
+        // Carrega os vertices e arestas do grafo de livros favoritos
         initSelectedGraph(books: Array<BookData>, evalCategory: Boolean = false) {
           this.selectedNodes = {}
           this.selectedEdges = {}
@@ -288,10 +296,19 @@
           console.log(this.selectedNodes)
           console.log(this.selectedEdges)
         },
+        // Calcula o peso da aresta entre dois vertices
         getEdgeWeight(book1: BookData, book2: BookData, evalCategory: Boolean = false) {
           let edgeWeight = 0
           let book1TitleKeywords = book1.title.split(' ').filter(word => word.length > 3)
           
+          /* Inicia com peso 0, adicionando um valor para cada caracteristica em comum:
+          * autores: +4
+          * categoria: +2
+          * avaliação: +2 ou -2 *TODO
+          * título: +5
+          * qtd paginas (dentro de até 20paginas): +1
+          */
+
           if (book1.authors && book2.authors) {
             book1.authors.forEach(author => {
               if (book2.authors.includes(author)) {
@@ -327,9 +344,19 @@
 
           return edgeWeight
         },
+        // Algoritmo de recomendação
         findRecommendedBooks() {
           this.recommendedBooks = []
           let adjList = [] as Array<{neighbor: number, weight: number }>
+
+          /* Inicializa uma lista de livros(vertices) vizinhos, para cada livro favoritado:
+          * - busca seu vertice no grafo;
+          * - busca suas arestas e guarda seus vizinhos e os pesos;
+          * - concatena a lista dos vizinhos de cada livro favoritado;
+          * - ordena os vizinhos pelo maior peso e guarda até os 5 primeiros;
+          * - busca o conteúdo desses vizinhos e atualiza a lista de livros recomendados;
+          */
+
           this.selectedBooks.forEach(book => {
             if (this.books.includes(book)) {
               let bookNode = ''
